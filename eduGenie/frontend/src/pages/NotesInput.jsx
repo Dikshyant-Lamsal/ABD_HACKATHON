@@ -1,117 +1,92 @@
 import React, { useState, useEffect } from "react";
 
-// The component now accepts `userId` as a prop.
-const NotesInput = ({ userId }) => {
+const NotesInput = () => {
   const [notes, setNotes] = useState("");
   const [message, setMessage] = useState("");
   const [savedNotes, setSavedNotes] = useState([]);
-  const [loading, setLoading] = useState(true);
 
-  // The useEffect hook now depends on the `userId` prop.
-  // It will run whenever the userId changes (e.g., after login/logout).
+  // Load saved notes from localStorage on mount
   useEffect(() => {
-    // Only fetch notes if a valid userId is provided
-    if (userId) {
-      fetchNotes();
-    } else {
-      // If no userId is present, we are not logged in.
-      // This resets the state and displays a login prompt.
-      setSavedNotes([]);
-      setLoading(false);
-      setMessage("Please log in to see your notes.");
-    }
-  }, [userId]); // The dependency array correctly tracks the userId prop
+    const storedNotes = JSON.parse(localStorage.getItem("notes")) || [];
+    setSavedNotes(storedNotes);
+  }, []);
 
-  const fetchNotes = async () => {
-    setLoading(true);
-    try {
-      const response = await fetch(`http://localhost:3000/api/notes/${userId}`);
-      if (response.ok) {
-        const data = await response.json();
-        setSavedNotes(data);
-      } else {
-        const errorData = await response.json();
-        setMessage(`Error fetching notes: ${errorData.error}`);
-      }
-    } catch (error) {
-      console.error("Failed to fetch notes:", error);
-      setMessage("Failed to connect to server to fetch notes.");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleSaveNotes = async () => {
-    if (!userId) {
-      setMessage("User not authenticated. Please log in.");
+  // Save notes to localStorage
+  const handleSaveNotes = () => {
+    if (!notes.trim()) {
+      setMessage("Note cannot be empty.");
       return;
     }
 
-    setMessage("Saving...");
-    try {
-      const response = await fetch("http://localhost:3000/api/notes", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ content: notes, userId: userId }),
-      });
+    const newNote = {
+      id: Date.now(),
+      content: notes,
+      createdAt: new Date().toISOString(),
+    };
 
-      if (response.ok) {
-        setMessage("Notes saved successfully!");
-        setNotes(""); // Clear the input after saving
-        fetchNotes(); // Fetch updated notes list
-      } else {
-        const errorData = await response.json();
-        setMessage(`Error: ${errorData.error}`);
-      }
-    } catch (error) {
-      console.error("Failed to save notes:", error);
-      setMessage("Failed to connect to server. Please try again.");
-    }
+    const updatedNotes = [newNote, ...savedNotes];
+    setSavedNotes(updatedNotes);
+    localStorage.setItem("notes", JSON.stringify(updatedNotes));
+
+    setNotes("");
+    setMessage("Note saved!");
+  };
+
+  // Delete a note
+  const handleDeleteNote = (id) => {
+    const updatedNotes = savedNotes.filter((note) => note.id !== id);
+    setSavedNotes(updatedNotes);
+    localStorage.setItem("notes", JSON.stringify(updatedNotes));
+    setMessage("Note deleted.");
   };
 
   return (
     <div className="flex flex-col">
-      <h2 className="text-2xl font-bold text-white mb-4">Type Your Notes</h2>
+      <h2 className="text-2xl font-bold text-yellow-400 mb-4">Type Your Notes</h2>
+      
       <textarea
         value={notes}
         onChange={(e) => setNotes(e.target.value)}
         placeholder="Start typing your notes here..."
-        className="w-full h-48 p-4 rounded-xl bg-white/30 backdrop-blur-sm border border-white/40 text-gray-800 resize-none focus:outline-none focus:ring-2 focus:ring-white/50 transition"
+        className="w-full h-40 p-4 rounded-xl bg-black/40 backdrop-blur-sm border border-yellow-400/40 text-white resize-none focus:outline-none focus:ring-2 focus:ring-yellow-400/70 transition"
       />
+      
       <button
         onClick={handleSaveNotes}
-        className="mt-4 px-6 py-3 bg-white text-purple-600 font-semibold rounded-full shadow-lg hover:bg-purple-100 transition-colors duration-300"
+        className="mt-4 px-6 py-3 bg-yellow-400 text-black font-semibold rounded-full shadow-lg hover:bg-yellow-300 transition-colors duration-300"
       >
-        Save Notes
+        Save Note
       </button>
-      {message && <p className="mt-2 text-white text-sm">{message}</p>}
+      
+      {message && <p className="mt-2 text-yellow-300 text-sm">{message}</p>}
 
       <div className="mt-8">
-        <h3 className="text-xl font-bold text-white mb-4">Your Saved Notes</h3>
-        {(() => {
-          if (loading) {
-            return <p className="text-white">Loading notes...</p>;
-          } else if (savedNotes.length > 0) {
-            return (
-              <div className="max-h-64 overflow-y-auto">
-                {savedNotes.map((note) => (
-                  <div key={note._id} className="bg-white/30 backdrop-blur-sm p-4 rounded-xl shadow-md mb-4 text-gray-800">
-                    <p className="text-sm font-semibold mb-2">
-                      Saved on: {new Date(note.createdAt).toLocaleString()}
-                    </p>
-                    <p className="text-lg">
-                      {note.content}
-                    </p>
-                  </div>
-                ))}
+        <h3 className="text-xl font-bold text-yellow-400 mb-4">Your Saved Notes</h3>
+        {savedNotes.length > 0 ? (
+          <div className="max-h-64 overflow-y-auto space-y-4">
+            {savedNotes.map((note) => (
+              <div
+                key={note.id}
+                className="bg-black/40 backdrop-blur-sm p-4 rounded-xl shadow-md border border-yellow-400/30 text-white relative"
+              >
+                <p className="text-sm opacity-70 mb-2">
+                  Saved on: {new Date(note.createdAt).toLocaleString()}
+                </p>
+                <p className="text-lg">{note.content}</p>
+                
+                {/* Delete Button */}
+                <button
+                  onClick={() => handleDeleteNote(note.id)}
+                  className="absolute top-3 right-3 text-red-400 hover:text-red-600 transition"
+                >
+                  ✖
+                </button>
               </div>
-            );
-          } else {
-            return <p className="text-white">You have no saved notes yet.</p>;
-          }
-        })()}
+            ))}
+          </div>
+        ) : (
+          <p className="text-gray-400">You have no saved notes yet.</p>
+        )}
       </div>
     </div>
   );

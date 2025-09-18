@@ -37,9 +37,9 @@ const Dashboard = () => {
       draw() {
         ctx.beginPath();
         ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
-        ctx.fillStyle = "rgba(96,165,250,0.8)";
-        ctx.shadowColor = "rgba(96,165,250,0.8)";
-        ctx.shadowBlur = 15;
+        ctx.fillStyle = "rgba(250, 204, 21, 0.8)"; // glowing yellow
+        ctx.shadowColor = "rgba(250, 204, 21, 0.9)";
+        ctx.shadowBlur = 20;
         ctx.fill();
       }
     }
@@ -53,7 +53,7 @@ const Dashboard = () => {
 
     function animate() {
       let gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
-      gradient.addColorStop(0, "#111827");
+      gradient.addColorStop(0, "#111111");
       gradient.addColorStop(1, "#000000");
       ctx.fillStyle = gradient;
       ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -82,21 +82,21 @@ const Dashboard = () => {
       <canvas ref={canvasRef} className="absolute inset-0 -z-10"></canvas>
 
       {/* Header */}
-      <h1 className="text-5xl font-extrabold text-blue-400 text-center mb-10 drop-shadow-lg relative z-10">
-        EduGenie Dashboard
+      <h1 className="text-5xl font-extrabold text-yellow-400 text-center mb-10 drop-shadow-[0_0_15px_rgba(250,204,21,0.7)] relative z-10">
+        ⚡ EduGenie Dashboard
       </h1>
 
       {/* Dashboard Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8 relative z-10">
-        <div className="bg-gray-900/50 backdrop-blur-lg p-6 rounded-3xl shadow-2xl border border-gray-700 hover:scale-105 transition-transform duration-300">
+        <div className="bg-black/50 backdrop-blur-md p-6 rounded-3xl shadow-2xl border border-yellow-400 hover:border-yellow-300 hover:scale-105 transition-transform duration-300">
           <PDFUpload />
         </div>
 
-        <div className="bg-gray-900/50 backdrop-blur-lg p-6 rounded-3xl shadow-2xl border border-gray-700 hover:scale-105 transition-transform duration-300">
+        <div className="bg-black/50 backdrop-blur-md p-6 rounded-3xl shadow-2xl border border-yellow-400 hover:border-yellow-300 hover:scale-105 transition-transform duration-300">
           <NotesInput />
         </div>
 
-        <div className="bg-gray-900/50 backdrop-blur-lg p-6 rounded-3xl shadow-2xl border border-gray-700 hover:scale-105 transition-transform duration-300 md:col-span-2">
+        <div className="bg-black/50 backdrop-blur-md p-6 rounded-3xl shadow-2xl border border-yellow-400 hover:border-yellow-300 hover:scale-105 transition-transform duration-300 md:col-span-2">
           <AIBot />
         </div>
       </div>

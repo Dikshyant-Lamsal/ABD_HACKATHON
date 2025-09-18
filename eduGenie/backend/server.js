@@ -14,7 +14,7 @@ const PORT = process.env.PORT || 3000;
 
 const allowedOrigins = ["http://localhost:5173"];
 app.use(cors({ origin: allowedOrigins }));
-app.use(bodyParser.json({ limit: "2mb" })); // limit payload size
+app.use(bodyParser.json({ limit: "2mb" }));
 app.use(bodyParser.urlencoded({ extended: true, limit: "2mb" }));
 
 // ================== MongoDB connection ==================
@@ -31,20 +31,20 @@ const connectDb = async () => {
 };
 connectDb();
 
-// ================== User Schema ==================
+// ================== Schemas ==================
 const userSchema = new mongoose.Schema({
   name: String,
   email: { type: String, unique: true },
   password: String,
 });
-const User = mongoose.model("User", userSchema);
 
-// ================== Notes Schema ==================
 const noteSchema = new mongoose.Schema({
   content: { type: String, required: true },
-  userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+  userId: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
   createdAt: { type: Date, default: Date.now },
 });
+
+const User = mongoose.model("User", userSchema);
 const Note = mongoose.model("Note", noteSchema);
 
 // ================== Auth Routes ==================
@@ -56,8 +56,7 @@ app.post("/api/signup", async (req, res) => {
 
     const newUser = new User({ name, email, password });
     await newUser.save();
-    res.status(201).json({ message: "Signup successful" });
-
+    res.status(201).json({ message: "Signup successful", userId: newUser._id });
   } catch (error) {
     console.error("Signup error:", error);
     res.status(500).json({ error: "Server error" });
@@ -70,47 +69,47 @@ app.post("/api/login", async (req, res) => {
     const user = await User.findOne({ email, password });
     if (!user) return res.status(401).json({ error: "Invalid credentials" });
 
-    res.json({ message: "Login successful", user });
-
+    res.json({ message: "Login successful", userId: user._id });
   } catch (error) {
-    console.error("Signup error:", error);
+    console.error("Login error:", error);
     res.status(500).json({ error: "Server error" });
   }
 });
 
 // ================== Notes Routes ==================
+
+// Save notes
 app.post("/api/notes", async (req, res) => {
   try {
     const { content, userId } = req.body;
     if (!content || !userId) {
-      return res.status(400).json({ error: "Notes content and user ID are required" });
+      return res
+        .status(400)
+        .json({ error: "Notes content and user ID are required" });
     }
 
-    // Check if the user exists
     const user = await User.findById(userId);
-    if (!user) {
-      return res.status(404).json({ error: "User not found" });
-    }
+    if (!user) return res.status(404).json({ error: "User not found" });
 
     const newNote = new Note({ content, userId });
     await newNote.save();
-    res.status(201).json({ message: "Notes saved successfully!", noteId: newNote._id });
-
+    res
+      .status(201)
+      .json({ message: "Notes saved successfully!", note: newNote });
   } catch (error) {
     console.error("Failed to save notes:", error);
     res.status(500).json({ error: "Server error occurred while saving notes." });
   }
 });
 
+// Retrieve notes by user
 app.get("/api/notes/:userId", async (req, res) => {
   try {
     const { userId } = req.params;
-    if (!userId) {
-      return res.status(400).json({ error: "User ID is required" });
-    }
+    if (!userId) return res.status(400).json({ error: "User ID is required" });
+
     const notes = await Note.find({ userId }).sort({ createdAt: -1 });
     res.json(notes);
-
   } catch (error) {
     console.error("Failed to fetch notes:", error);
     res.status(500).json({ error: "Server error occurred while fetching notes." });
@@ -127,29 +126,22 @@ app.post("/api/ai", async (req, res) => {
     const { prompt } = req.body;
     if (!prompt) return res.status(400).json({ error: "No prompt provided" });
 
-    // Timeout safety (10s max)
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 10000);
-
     const result = await model.generateContent(
       `You are EduGenie, a helpful AI tutor.
-        Keep answers short and clear (max 5 sentences).
-        User question: ${prompt}`
+      Keep answers short and clear (max 5 sentences).
+      User question: ${prompt}`
     );
 
-    clearTimeout(timeout);
     res.json({ result: result.response.text() });
-
   } catch (error) {
     console.error("Gemini AI error:", error.message);
-    res.status(500).json({ error: "AI request failed (maybe timeout)" });
+    res.status(500).json({ error: "AI request failed" });
   }
 });
 
-// ================== File Upload Setup ==================
+// ================== File Upload & PDF Summarization ==================
 const upload = multer({ storage: multer.memoryStorage() });
 
-// ================== PDF Summarization Route ==================
 app.post("/api/summarize-pdf", upload.single("file"), async (req, res) => {
   try {
     if (!req.file) return res.status(400).json({ error: "No file uploaded" });
@@ -172,7 +164,7 @@ app.post("/api/summarize-pdf", upload.single("file"), async (req, res) => {
           });
         });
 
-        const pdfText = rawText.slice(0, 2000); // smaller chunk for speed
+        const pdfText = rawText.slice(0, 2000);
 
         const result = await model.generateContent(
           `Summarize the following study notes into 8-10 clear bullet points:\n\n${pdfText}`
@@ -184,7 +176,6 @@ app.post("/api/summarize-pdf", upload.single("file"), async (req, res) => {
         res.status(500).json({ error: "AI summarization failed" });
       }
     });
-
   } catch (error) {
     console.error("PDF Summarization error:", error.message);
     res.status(500).json({ error: "Failed to summarize PDF" });

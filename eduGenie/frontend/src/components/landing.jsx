@@ -86,10 +86,10 @@ const Landing = () => {
       <div className="max-w-2xl mb-10 relative z-10">
         <div className="flex items-center justify-center gap-4 mb-6">
           <img
-            src={logo}
-            alt="EduGenie Logo"
-            className="w-20 h-20 object-contain mix-blend-screen drop-shadow-[0_0_20px_rgba(96,165,250,0.7)]"
-          />
+  src={logo}
+  alt="EduGenie Logo"
+  className="w-28 h-28 object-contain mix-blend-screen drop-shadow-[0_0_25px_rgba(96,165,250,0.8)]"
+/>
           <h1 className="text-6xl font-extrabold text-blue-400 drop-shadow-lg">
             EduGenie
           </h1>
