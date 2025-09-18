@@ -3,6 +3,9 @@ import bodyParser from 'body-parser';
 import mongoose from 'mongoose';
 import cors from 'cors';
 
+const app = express();
+const PORT = process.env.PORT || 3000;
+
 const allowedOrigins = [
       "http://localhost:5173",
     ];
@@ -14,8 +17,6 @@ const corsOptions = {
 app.use(cors(corsOptions));
 
 
-const app = express();
-const PORT = process.env.PORT || 3000;
 
 app.use(bodyParser.urlencoded({ extended: true }));
 
@@ -32,8 +33,10 @@ connectDb();
 
 //---------------------------------------------------------------------------------------
 
-app.get('/api/data', (req, res) => {
-      res.json({ message: 'Data from Node.js backend' });
+app.post('/api/Login', (req, res) => {
+    const email = req.body.email;
+    const password = req.body.password;
+    console.log(`Email: ${email}, Password: ${password}`);
 });
 
 

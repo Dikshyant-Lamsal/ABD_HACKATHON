@@ -8,13 +8,15 @@ const Login = () => {
         <h2 className="text-3xl font-bold text-gray-800 mb-6 text-center">
           Login - EduGenie
         </h2>
-        <form className="space-y-5">
+        <form className="space-y-5" method="POST" action="/api/login">
           <input
+            name="email"
             type="email"
             placeholder="Email Address"
             className="w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-400"
           />
           <input
+            name="password"
             type="password"
             placeholder="Password"
             className="w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-400"
