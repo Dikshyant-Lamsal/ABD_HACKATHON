@@ -21,9 +21,9 @@ const connectDb = async () => {
       useNewUrlParser: true,
       useUnifiedTopology: true,
     });
-    console.log("✅ Connected to MongoDB");
+    console.log("Connected to MongoDB");
   } catch (error) {
-    console.error("❌ Error connecting to MongoDB:", error);
+    console.error("Error connecting to MongoDB:", error);
   }
 };
 connectDb();
@@ -74,5 +74,5 @@ app.post("/api/login", async (req, res) => {
 });
 
 app.listen(PORT, () => {
-  console.log(`🚀 Server running on http://localhost:${PORT}`);
+  console.log(`Server running on http://localhost:${PORT}`);
 });
