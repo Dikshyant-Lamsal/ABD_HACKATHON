@@ -1,10 +1,11 @@
 import React, { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import axios from "axios";
 
 const Login = () => {
   const [form, setForm] = useState({ email: "", password: "" });
   const [message, setMessage] = useState("");
+  const navigate = useNavigate(); // <-- navigation hook
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -15,6 +16,14 @@ const Login = () => {
     try {
       const res = await axios.post("http://localhost:3000/api/login", form);
       setMessage(res.data.message);
+
+      // ✅ Save token if provided by backend
+      if (res.data.token) {
+        localStorage.setItem("token", res.data.token);
+      }
+
+      // ✅ Redirect to dashboard
+      navigate("/dashboard");
     } catch (err) {
       setMessage(err.response?.data?.error || "Login failed");
     }
@@ -50,7 +59,9 @@ const Login = () => {
             Login
           </button>
         </form>
-        {message && <p className="text-center text-sm text-red-500 mt-3">{message}</p>}
+        {message && (
+          <p className="text-center text-sm text-red-500 mt-3">{message}</p>
+        )}
         <p className="text-center text-gray-500 mt-4">
           Don’t have an account?{" "}
           <Link
