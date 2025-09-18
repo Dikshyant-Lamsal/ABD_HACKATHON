@@ -5,12 +5,19 @@ import AIBot from "./AIBot";
 
 const Dashboard = () => {
   const canvasRef = useRef(null);
+  const containerRef = useRef(null);
 
   useEffect(() => {
     const canvas = canvasRef.current;
+    const container = containerRef.current;
     const ctx = canvas.getContext("2d");
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
+
+    function resizeCanvas() {
+      canvas.width = container.offsetWidth;
+      canvas.height = container.offsetHeight;
+    }
+
+    resizeCanvas();
 
     let particles = [];
     class Particle {
@@ -45,10 +52,9 @@ const Dashboard = () => {
     }
 
     function animate() {
-      // Dark gradient background
       let gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
-      gradient.addColorStop(0, "#111827"); // dark slate (top)
-      gradient.addColorStop(1, "#000000"); // black (bottom)
+      gradient.addColorStop(0, "#111827");
+      gradient.addColorStop(1, "#000000");
       ctx.fillStyle = gradient;
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
@@ -63,18 +69,15 @@ const Dashboard = () => {
     init();
     animate();
 
-    const handleResize = () => {
-      canvas.width = window.innerWidth;
-      canvas.height = window.innerHeight;
-      init();
-    };
-    window.addEventListener("resize", handleResize);
-
-    return () => window.removeEventListener("resize", handleResize);
+    window.addEventListener("resize", resizeCanvas);
+    return () => window.removeEventListener("resize", resizeCanvas);
   }, []);
 
   return (
-    <div className="relative min-h-screen flex flex-col p-6 overflow-hidden text-white">
+    <div
+      ref={containerRef}
+      className="relative min-h-screen flex flex-col p-6 overflow-hidden text-white"
+    >
       {/* Dynamic Canvas Background */}
       <canvas ref={canvasRef} className="absolute inset-0 -z-10"></canvas>
 
