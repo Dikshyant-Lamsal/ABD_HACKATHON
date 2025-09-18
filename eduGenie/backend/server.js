@@ -2,6 +2,7 @@ import express from "express";
 import bodyParser from "body-parser";
 import mongoose from "mongoose";
 import cors from "cors";
+import { Configuration, OpenAIApi } from "openai";
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -75,4 +76,28 @@ app.post("/api/login", async (req, res) => {
 
 app.listen(PORT, () => {
   console.log(`🚀 Server running on http://localhost:${PORT}`);
+});
+
+// server.js or a separate route file
+
+
+const configuration = new Configuration({
+  apiKey: process.env.OPENAI_API_KEY, // Store in .env
+});
+const openai = new OpenAIApi(configuration);
+
+app.post("/api/ai", async (req, res) => {
+  try {
+    const { prompt } = req.body;
+
+    const response = await openai.chat.completions.create({
+      model: "gpt-4o-mini", // or gpt-4, gpt-3.5-turbo
+      messages: [{ role: "user", content: prompt }],
+    });
+
+    res.json({ result: response.choices[0].message.content });
+  } catch (error) {
+    console.error("AI API error:", error);
+    res.status(500).json({ error: "AI request failed" });
+  }
 });

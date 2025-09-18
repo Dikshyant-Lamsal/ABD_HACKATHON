@@ -1,26 +1,48 @@
 import React, { useState } from "react";
+import axios from "axios";
 
 const AIBot = () => {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  const handleSend = () => {
+  // Helper to generate unique ids
+  const generateId = () => `${Date.now()}-${Math.random().toString(36).substring(2, 11)}`;
+
+  const handleSend = async () => {
     if (!input) return;
-    setMessages([...messages, { type: "user", text: input }]);
-    setMessages((prev) => [
-      ...prev,
-      { type: "bot", text: "This is a placeholder AI response." },
-    ]);
-    setInput("");
+
+    // Add user's message
+    const userMsg = { id: generateId(), type: "user", text: input };
+    setMessages((prev) => [...prev, userMsg]);
+    setLoading(true);
+
+    try {
+      // Call your backend AI endpoint
+      const response = await axios.post("http://localhost:3000/api/ai", {
+        prompt: input,
+      });
+
+      // Add AI's response
+      const botMsg = { id: generateId(), type: "bot", text: response.data.result };
+      setMessages((prev) => [...prev, botMsg]);
+    } catch (error) {
+      console.error("AI error:", error);
+      const errorMsg = { id: generateId(), type: "bot", text: "Sorry, something went wrong." };
+      setMessages((prev) => [...prev, errorMsg]);
+    } finally {
+      setInput("");
+      setLoading(false);
+    }
   };
 
   return (
     <div className="flex flex-col h-80">
       <h2 className="text-2xl font-bold text-white mb-4">AI Bot</h2>
       <div className="flex-1 overflow-y-auto p-4 rounded-xl bg-white/20 backdrop-blur-sm mb-4">
-        {messages.map((msg, idx) => (
+        {messages.map((msg) => (
           <div
-            key={idx}
+            key={msg.id}
             className={`mb-2 p-2 rounded-lg max-w-[80%] ${
               msg.type === "user"
                 ? "bg-blue-400 text-white self-end"
@@ -30,6 +52,9 @@ const AIBot = () => {
             {msg.text}
           </div>
         ))}
+        {loading && (
+          <div className="text-gray-300 italic">AI is typing...</div>
+        )}
       </div>
       <div className="flex">
         <input
@@ -42,6 +67,7 @@ const AIBot = () => {
         <button
           onClick={handleSend}
           className="bg-blue-500 text-white px-4 rounded-r-xl hover:bg-blue-600 transition"
+          disabled={loading}
         >
           Send
         </button>
