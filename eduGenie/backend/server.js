@@ -14,10 +14,10 @@ const PORT = process.env.PORT || 3000;
 
 const allowedOrigins = ["http://localhost:5173"];
 app.use(cors({ origin: allowedOrigins }));
-app.use(bodyParser.json());
-app.use(bodyParser.urlencoded({ extended: true }));
+app.use(bodyParser.json({ limit: "2mb" })); // limit payload size
+app.use(bodyParser.urlencoded({ extended: true, limit: "2mb" }));
 
-// MongoDB connection
+// ================== MongoDB connection ==================
 const connectDb = async () => {
   try {
     await mongoose.connect("mongodb://localhost:27017/edugenie", {
@@ -31,7 +31,7 @@ const connectDb = async () => {
 };
 connectDb();
 
-// User Schema
+// ================== User Schema ==================
 const userSchema = new mongoose.Schema({
   name: String,
   email: { type: String, unique: true },
@@ -39,7 +39,7 @@ const userSchema = new mongoose.Schema({
 });
 const User = mongoose.model("User", userSchema);
 
-// Signup API
+// ================== Auth Routes ==================
 app.post("/api/signup", async (req, res) => {
   try {
     const { name, email, password } = req.body;
@@ -48,14 +48,12 @@ app.post("/api/signup", async (req, res) => {
 
     const newUser = new User({ name, email, password });
     await newUser.save();
-
     res.status(201).json({ message: "Signup successful" });
   } catch (error) {
     res.status(500).json({ error: "Server error" });
   }
 });
 
-// Login API
 app.post("/api/login", async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -68,31 +66,51 @@ app.post("/api/login", async (req, res) => {
   }
 });
 
-// Gemini AI Setup
+// ================== Gemini AI Setup ==================
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
-// File upload setup
+// ================== AI Chatbot Route ==================
+app.post("/api/ai", async (req, res) => {
+  try {
+    const { prompt } = req.body;
+    if (!prompt) return res.status(400).json({ error: "No prompt provided" });
+
+    // Timeout safety (10s max)
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 10000);
+
+    const result = await model.generateContent(
+      `You are EduGenie, a helpful AI tutor.
+       Keep answers short and clear (max 5 sentences).
+       User question: ${prompt}`
+    );
+
+    clearTimeout(timeout);
+    res.json({ result: result.response.text() });
+  } catch (error) {
+    console.error("Gemini AI error:", error.message);
+    res.status(500).json({ error: "AI request failed (maybe timeout)" });
+  }
+});
+
+// ================== File Upload Setup ==================
 const upload = multer({ storage: multer.memoryStorage() });
 
-// PDF Summarization Route using pdf2json
+// ================== PDF Summarization Route ==================
 app.post("/api/summarize-pdf", upload.single("file"), async (req, res) => {
   try {
-    if (!req.file) {
-      return res.status(400).json({ error: "No file uploaded" });
-    }
+    if (!req.file) return res.status(400).json({ error: "No file uploaded" });
 
     const pdfParser = new PDFParser();
-
     pdfParser.parseBuffer(req.file.buffer);
 
-    pdfParser.on("pdfParser_dataError", (errData) => {
-      console.error("PDF parsing error:", errData.parserError);
-      return res.status(500).json({ error: "Failed to parse PDF" });
-    });
+    pdfParser.on("pdfParser_dataError", () =>
+      res.status(500).json({ error: "Failed to parse PDF" })
+    );
 
     pdfParser.on("pdfParser_dataReady", async (pdfData) => {
       try {
-        // Extract text from pdf2json output
         let rawText = "";
         pdfData.Pages.forEach((page) => {
           page.Texts.forEach((textObj) => {
@@ -102,27 +120,25 @@ app.post("/api/summarize-pdf", upload.single("file"), async (req, res) => {
           });
         });
 
-        const pdfText = rawText.slice(0, 5000); // keep safe limit
+        const pdfText = rawText.slice(0, 2000); // smaller chunk for speed
 
-        // Ask Gemini AI to summarize
-        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
-        const prompt = `Summarize the following study notes into 10-20 clear bullet points:\n\n${pdfText}`;
+        const result = await model.generateContent(
+          `Summarize the following study notes into 8-10 clear bullet points:\n\n${pdfText}`
+        );
 
-        const result = await model.generateContent(prompt);
-        const summary = result.response.text();
-
-        res.json({ summary });
+        res.json({ summary: result.response.text() });
       } catch (error) {
-        console.error("Gemini AI error:", error);
+        console.error("Gemini AI summarization error:", error.message);
         res.status(500).json({ error: "AI summarization failed" });
       }
     });
   } catch (error) {
-    console.error("PDF Summarization error:", error);
+    console.error("PDF Summarization error:", error.message);
     res.status(500).json({ error: "Failed to summarize PDF" });
   }
 });
 
+// ================== Start Server ==================
 app.listen(PORT, () => {
   console.log(`🚀 Server running on http://localhost:${PORT}`);
 });

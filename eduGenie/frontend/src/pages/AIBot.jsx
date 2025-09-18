@@ -6,39 +6,23 @@ const AIBot = () => {
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
 
-  // Helper to generate unique IDs
-  const generateId = () =>
-    `${Date.now()}-${Math.random().toString(36).substring(2, 11)}`;
+  const generateId = () => `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 
   const handleSend = async () => {
-    if (!input) return;
+    if (!input.trim()) return;
 
-    // Add user's message
     const userMsg = { id: generateId(), type: "user", text: input };
     setMessages((prev) => [...prev, userMsg]);
     setLoading(true);
 
     try {
-      // Call backend Gemini AI API
-      const response = await axios.post(
-        `${import.meta.env.VITE_API_URL}/api/ai`,
-        { prompt: input }
-      );
+      const res = await axios.post("http://localhost:3000/api/ai", { prompt: input });
 
-      // Add AI's response
-      const botMsg = {
-        id: generateId(),
-        type: "bot",
-        text: response.data.result,
-      };
+      const botMsg = { id: generateId(), type: "bot", text: res.data.result || "No response" };
       setMessages((prev) => [...prev, botMsg]);
     } catch (error) {
       console.error("AI error:", error);
-      const errorMsg = {
-        id: generateId(),
-        type: "bot",
-        text: "❌ Sorry, something went wrong.",
-      };
+      const errorMsg = { id: generateId(), type: "bot", text: "❌ AI request failed." };
       setMessages((prev) => [...prev, errorMsg]);
     } finally {
       setInput("");
@@ -47,42 +31,38 @@ const AIBot = () => {
   };
 
   return (
-    <div className="flex flex-col h-80">
+    <div className="flex flex-col h-96">
       <h2 className="text-2xl font-bold text-white mb-4">AI Bot</h2>
 
-      {/* Chat Window */}
       <div className="flex-1 overflow-y-auto p-4 rounded-xl bg-white/20 backdrop-blur-sm mb-4">
         {messages.map((msg) => (
           <div
             key={msg.id}
             className={`mb-2 p-2 rounded-lg max-w-[80%] ${
               msg.type === "user"
-                ? "bg-blue-500 text-white self-end ml-auto"
-                : "bg-white/70 text-gray-800 self-start"
+                ? "bg-blue-500 text-white ml-auto"
+                : "bg-white/40 text-gray-800 mr-auto"
             }`}
           >
             {msg.text}
           </div>
         ))}
-
-        {loading && (
-          <div className="text-gray-300 italic">🤖 AI is typing...</div>
-        )}
+        {loading && <div className="text-gray-300 italic">🤖 AI is typing...</div>}
       </div>
 
-      {/* Input Bar */}
       <div className="flex">
         <input
           type="text"
           value={input}
           onChange={(e) => setInput(e.target.value)}
           placeholder="Ask something..."
-          className="flex-1 p-3 rounded-l-xl bg-white/30 backdrop-blur-sm border border-white/40 focus:outline-none focus:ring-2 focus:ring-white/50 transition"
+          className="flex-1 p-3 rounded-l-xl bg-white/30 backdrop-blur-sm border border-white/40 
+                     focus:outline-none focus:ring-2 focus:ring-white/50"
         />
         <button
           onClick={handleSend}
-          className="bg-blue-500 text-white px-4 rounded-r-xl hover:bg-blue-600 transition disabled:opacity-50"
           disabled={loading}
+          className="bg-blue-600 text-white px-4 rounded-r-xl hover:bg-blue-700 transition"
         >
           Send
         </button>
