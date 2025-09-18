@@ -6,8 +6,9 @@ const AIBot = () => {
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
 
-  // Helper to generate unique ids
-  const generateId = () => `${Date.now()}-${Math.random().toString(36).substring(2, 11)}`;
+  // Helper to generate unique IDs
+  const generateId = () =>
+    `${Date.now()}-${Math.random().toString(36).substring(2, 11)}`;
 
   const handleSend = async () => {
     if (!input) return;
@@ -18,17 +19,26 @@ const AIBot = () => {
     setLoading(true);
 
     try {
-      // Call your backend AI endpoint
-      const response = await axios.post("http://localhost:3000/api/ai", {
-        prompt: input,
-      });
+      // Call backend Gemini AI API
+      const response = await axios.post(
+        `${import.meta.env.VITE_API_URL}/api/ai`,
+        { prompt: input }
+      );
 
       // Add AI's response
-      const botMsg = { id: generateId(), type: "bot", text: response.data.result };
+      const botMsg = {
+        id: generateId(),
+        type: "bot",
+        text: response.data.result,
+      };
       setMessages((prev) => [...prev, botMsg]);
     } catch (error) {
       console.error("AI error:", error);
-      const errorMsg = { id: generateId(), type: "bot", text: "Sorry, something went wrong." };
+      const errorMsg = {
+        id: generateId(),
+        type: "bot",
+        text: "❌ Sorry, something went wrong.",
+      };
       setMessages((prev) => [...prev, errorMsg]);
     } finally {
       setInput("");
@@ -39,23 +49,28 @@ const AIBot = () => {
   return (
     <div className="flex flex-col h-80">
       <h2 className="text-2xl font-bold text-white mb-4">AI Bot</h2>
+
+      {/* Chat Window */}
       <div className="flex-1 overflow-y-auto p-4 rounded-xl bg-white/20 backdrop-blur-sm mb-4">
         {messages.map((msg) => (
           <div
             key={msg.id}
             className={`mb-2 p-2 rounded-lg max-w-[80%] ${
               msg.type === "user"
-                ? "bg-blue-400 text-white self-end"
-                : "bg-white/40 text-gray-800 self-start"
+                ? "bg-blue-500 text-white self-end ml-auto"
+                : "bg-white/70 text-gray-800 self-start"
             }`}
           >
             {msg.text}
           </div>
         ))}
+
         {loading && (
-          <div className="text-gray-300 italic">AI is typing...</div>
+          <div className="text-gray-300 italic">🤖 AI is typing...</div>
         )}
       </div>
+
+      {/* Input Bar */}
       <div className="flex">
         <input
           type="text"
@@ -66,7 +81,7 @@ const AIBot = () => {
         />
         <button
           onClick={handleSend}
-          className="bg-blue-500 text-white px-4 rounded-r-xl hover:bg-blue-600 transition"
+          className="bg-blue-500 text-white px-4 rounded-r-xl hover:bg-blue-600 transition disabled:opacity-50"
           disabled={loading}
         >
           Send

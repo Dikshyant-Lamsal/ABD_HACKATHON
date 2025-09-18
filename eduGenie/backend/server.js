@@ -3,7 +3,9 @@ import bodyParser from "body-parser";
 import mongoose from "mongoose";
 import cors from "cors";
 import dotenv from "dotenv";
+import multer from "multer";
 import { GoogleGenerativeAI } from "@google/generative-ai";
+import PDFParser from "pdf2json";
 
 dotenv.config();
 
@@ -69,19 +71,55 @@ app.post("/api/login", async (req, res) => {
 // Gemini AI Setup
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
-// AI Route
-app.post("/api/ai", async (req, res) => {
+// File upload setup
+const upload = multer({ storage: multer.memoryStorage() });
+
+// PDF Summarization Route using pdf2json
+app.post("/api/summarize-pdf", upload.single("file"), async (req, res) => {
   try {
-    const { prompt } = req.body;
+    if (!req.file) {
+      return res.status(400).json({ error: "No file uploaded" });
+    }
 
-    const model = genAI.getGenerativeModel({ model: "gemini-pro" });
-    const result = await model.generateContent(prompt);
-    const text = result.response.text();
+    const pdfParser = new PDFParser();
 
-    res.json({ result: text });
+    pdfParser.parseBuffer(req.file.buffer);
+
+    pdfParser.on("pdfParser_dataError", (errData) => {
+      console.error("PDF parsing error:", errData.parserError);
+      return res.status(500).json({ error: "Failed to parse PDF" });
+    });
+
+    pdfParser.on("pdfParser_dataReady", async (pdfData) => {
+      try {
+        // Extract text from pdf2json output
+        let rawText = "";
+        pdfData.Pages.forEach((page) => {
+          page.Texts.forEach((textObj) => {
+            textObj.R.forEach((t) => {
+              rawText += decodeURIComponent(t.T) + " ";
+            });
+          });
+        });
+
+        const pdfText = rawText.slice(0, 5000); // keep safe limit
+
+        // Ask Gemini AI to summarize
+        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+        const prompt = `Summarize the following study notes into 10-20 clear bullet points:\n\n${pdfText}`;
+
+        const result = await model.generateContent(prompt);
+        const summary = result.response.text();
+
+        res.json({ summary });
+      } catch (error) {
+        console.error("Gemini AI error:", error);
+        res.status(500).json({ error: "AI summarization failed" });
+      }
+    });
   } catch (error) {
-    console.error("Gemini AI error:", error);
-    res.status(500).json({ error: "AI request failed" });
+    console.error("PDF Summarization error:", error);
+    res.status(500).json({ error: "Failed to summarize PDF" });
   }
 });
 
