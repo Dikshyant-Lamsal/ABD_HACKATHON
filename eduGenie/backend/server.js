@@ -39,6 +39,14 @@ const userSchema = new mongoose.Schema({
 });
 const User = mongoose.model("User", userSchema);
 
+// ================== Notes Schema ==================
+const noteSchema = new mongoose.Schema({
+  content: { type: String, required: true },
+  userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+  createdAt: { type: Date, default: Date.now },
+});
+const Note = mongoose.model("Note", noteSchema);
+
 // ================== Auth Routes ==================
 app.post("/api/signup", async (req, res) => {
   try {
@@ -49,6 +57,7 @@ app.post("/api/signup", async (req, res) => {
     const newUser = new User({ name, email, password });
     await newUser.save();
     res.status(201).json({ message: "Signup successful" });
+
   } catch (error) {
     console.error("Signup error:", error);
     res.status(500).json({ error: "Server error" });
@@ -62,9 +71,49 @@ app.post("/api/login", async (req, res) => {
     if (!user) return res.status(401).json({ error: "Invalid credentials" });
 
     res.json({ message: "Login successful", user });
+
   } catch (error) {
     console.error("Signup error:", error);
     res.status(500).json({ error: "Server error" });
+  }
+});
+
+// ================== Notes Routes ==================
+app.post("/api/notes", async (req, res) => {
+  try {
+    const { content, userId } = req.body;
+    if (!content || !userId) {
+      return res.status(400).json({ error: "Notes content and user ID are required" });
+    }
+
+    // Check if the user exists
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    const newNote = new Note({ content, userId });
+    await newNote.save();
+    res.status(201).json({ message: "Notes saved successfully!", noteId: newNote._id });
+
+  } catch (error) {
+    console.error("Failed to save notes:", error);
+    res.status(500).json({ error: "Server error occurred while saving notes." });
+  }
+});
+
+app.get("/api/notes/:userId", async (req, res) => {
+  try {
+    const { userId } = req.params;
+    if (!userId) {
+      return res.status(400).json({ error: "User ID is required" });
+    }
+    const notes = await Note.find({ userId }).sort({ createdAt: -1 });
+    res.json(notes);
+
+  } catch (error) {
+    console.error("Failed to fetch notes:", error);
+    res.status(500).json({ error: "Server error occurred while fetching notes." });
   }
 });
 
@@ -84,12 +133,13 @@ app.post("/api/ai", async (req, res) => {
 
     const result = await model.generateContent(
       `You are EduGenie, a helpful AI tutor.
-       Keep answers short and clear (max 5 sentences).
-       User question: ${prompt}`
+        Keep answers short and clear (max 5 sentences).
+        User question: ${prompt}`
     );
 
     clearTimeout(timeout);
     res.json({ result: result.response.text() });
+
   } catch (error) {
     console.error("Gemini AI error:", error.message);
     res.status(500).json({ error: "AI request failed (maybe timeout)" });
@@ -134,6 +184,7 @@ app.post("/api/summarize-pdf", upload.single("file"), async (req, res) => {
         res.status(500).json({ error: "AI summarization failed" });
       }
     });
+
   } catch (error) {
     console.error("PDF Summarization error:", error.message);
     res.status(500).json({ error: "Failed to summarize PDF" });

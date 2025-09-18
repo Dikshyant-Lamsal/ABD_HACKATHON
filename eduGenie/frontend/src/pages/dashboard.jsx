@@ -1,7 +1,6 @@
 import React from "react";
 import PDFUpload from "./PDFUpload";
 import NotesInput from "./NotesInput";
-import QuizSection from "./QuizSection";
 import AIBot from "./AIBot";
 
 const Dashboard = () => {
@@ -18,10 +17,6 @@ const Dashboard = () => {
 
         <div className="bg-white/20 backdrop-blur-lg p-6 rounded-3xl shadow-2xl hover:scale-105 transition-transform duration-300">
           <NotesInput />
-        </div>
-
-        <div className="bg-white/20 backdrop-blur-lg p-6 rounded-3xl shadow-2xl hover:scale-105 transition-transform duration-300">
-          <QuizSection />
         </div>
 
         <div className="bg-white/20 backdrop-blur-lg p-6 rounded-3xl shadow-2xl hover:scale-105 transition-transform duration-300">
