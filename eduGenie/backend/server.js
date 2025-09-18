@@ -50,6 +50,7 @@ app.post("/api/signup", async (req, res) => {
     await newUser.save();
     res.status(201).json({ message: "Signup successful" });
   } catch (error) {
+    console.error("Signup error:", error);
     res.status(500).json({ error: "Server error" });
   }
 });
@@ -62,6 +63,7 @@ app.post("/api/login", async (req, res) => {
 
     res.json({ message: "Login successful", user });
   } catch (error) {
+    console.error("Signup error:", error);
     res.status(500).json({ error: "Server error" });
   }
 });
