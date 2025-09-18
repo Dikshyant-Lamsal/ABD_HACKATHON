@@ -1,5 +1,6 @@
 import Note from '../models/Note.js';
 import { extractTextFromPDF } from '../services/file.service.js';
+import fs from 'fs';
 
 export const uploadNote = async (req, res) => {
   try {
@@ -10,7 +11,12 @@ export const uploadNote = async (req, res) => {
     const note = await Note.create({
       user: req.user._id,
       title: req.file.originalname,
-      content: text
+      content: text,
+    });
+
+    // Delete uploaded file after extraction
+    fs.unlink(req.file.path, (err) => {
+      if (err) console.error('Failed to delete uploaded PDF:', err.message);
     });
 
     res.json({ msg: 'Note uploaded successfully', note });
@@ -32,7 +38,6 @@ export const getNoteById = async (req, res) => {
   try {
     const note = await Note.findOne({ _id: req.params.id, user: req.user._id });
     if (!note) return res.status(404).json({ msg: 'Note not found' });
-
     res.json(note);
   } catch (err) {
     res.status(500).json({ msg: err.message });
