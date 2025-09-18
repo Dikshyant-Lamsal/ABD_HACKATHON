@@ -1,13 +1,13 @@
-import OpenAI from 'openai';
-import Note from '../models/Note.js';
-import Quiz from '../models/Quiz.js';
-import Question from '../models/Question.js';
+import OpenAI from "openai";
+import Note from "../models/Note.js";
+import Quiz from "../models/Quiz.js";
+import Question from "../models/Question.js";
 
 const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
-export const generateQuiz = async (noteId, userId) => {
+export const generateQuizFromNote = async (noteId, userId) => {
   const note = await Note.findById(noteId);
-  if (!note) throw new Error('Note not found');
+  if (!note) throw new Error("Note not found");
 
   const prompt = `
   Generate 5 multiple-choice questions with 4 options each based on the following text:
@@ -17,15 +17,15 @@ export const generateQuiz = async (noteId, userId) => {
   `;
 
   const response = await client.chat.completions.create({
-    model: 'gpt-4o-mini',
-    messages: [{ role: 'user', content: prompt }],
+    model: "gpt-4o-mini",
+    messages: [{ role: "user", content: prompt }],
   });
 
   let quizData = [];
   try {
     quizData = JSON.parse(response.choices[0].message.content);
   } catch (err) {
-    console.error('Failed to parse quiz JSON:', err.message);
+    console.error("Failed to parse quiz JSON:", err.message);
   }
 
   const quiz = await Quiz.create({ user: userId, note: noteId });
@@ -35,11 +35,11 @@ export const generateQuiz = async (noteId, userId) => {
       text: q.question,
       options: q.options,
       answer: q.answer,
-      quiz: quiz._id
+      quiz: quiz._id,
     });
     quiz.questions.push(question._id);
   }
 
   await quiz.save();
-  return quiz;
+  return quiz.populate("questions");
 };
