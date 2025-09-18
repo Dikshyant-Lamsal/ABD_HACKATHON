@@ -1,10 +1,8 @@
 import React from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
-import Signup from "./pages/Signup";
-import Login from "./pages/Login";
-import Landing from "./pages/Landing";
-import Dashboard from "./pages/Dashboard";
-import ProtectedRoute from "./components/ProtectedRoute"; // Import ProtectedRoute
+import Signup from "./components/signup";
+import Login from "./components/login";
+import Landing from "./components/landing";
 
 function App() {
   return (
@@ -13,15 +11,6 @@ function App() {
         <Route path="/" element={<Landing />} />
         <Route path="/signup" element={<Signup />} />
         <Route path="/login" element={<Login />} />
-        {/* Dashboard is now protected */}
-        <Route
-          path="/dashboard"
-          element={
-            <ProtectedRoute>
-              <Dashboard />
-            </ProtectedRoute>
-          }
-        />
         <Route path="*" element={<Landing />} />
       </Routes>
     </Router>
