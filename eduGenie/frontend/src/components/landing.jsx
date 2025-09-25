@@ -98,7 +98,7 @@ const Landing = () => {
           Your AI-powered learning companion that transforms overwhelming study
           materials into{" "}
           <span className="font-semibold text-white">
-            personalized summaries, quizzes, and flashcards
+            personalized summaries, personalized AI chatBot, a personalized notepad
           </span>.
         </p>
         <div className="flex gap-4 justify-center">
